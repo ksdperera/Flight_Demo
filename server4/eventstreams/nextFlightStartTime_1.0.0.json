@@ -1,0 +1,12 @@
+{
+  "name": "nextFlightStartTime",
+  "version": "1.0.0",
+  "nickName": "",
+  "description": "",
+  "payloadData": [
+    {
+      "name": "time_from",
+      "type": "INT"
+    }
+  ]
+}

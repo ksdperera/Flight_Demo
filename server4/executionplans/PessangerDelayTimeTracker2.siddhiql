@@ -1,0 +1,99 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('PessangerDelayTimeTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('delayed.flight.stream:1.0.0')
+define stream delayedFlightStream (delayed_time long, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+@Export('delayedPassenger:1.0.0')
+define stream delayedPassenger (delayed_time long, passenger_name string, time_from int, time_to int, flight_number int, flight_name string);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='PASSENGER_SCHEDULE_TABLE')
+define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table passengerScheduleTable (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
+
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from startTrigger join passengerScheduleTableRDBMS
+select flight_number, passenger_id, passenger_name, time_from, time_to
+insert into passengerScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from passengerScheduleRdbmsStream
+insert into passengerScheduleTable;
+
+@info(name = 'generate_effected_passenger')
+from delayedFlightStream join passengerScheduleTable
+							on passengerScheduleTable.flight_number == delayedFlightStream.flight_number
+select
+	delayedFlightStream.delayed_time,
+	passengerScheduleTable.passenger_name,
+	passengerScheduleTable.time_from,
+	passengerScheduleTable.time_to,
+	delayedFlightStream.flight_number,
+	delayedFlightStream.flight_name
+insert into delayedPassenger1;
+
+@info(name = 'search_for_next_flight_satrt_time_for_delayed_passenger')
+from delayedPassenger1 join passengerScheduleTable 
+					on passengerScheduleTable.passenger_name == delayedPassenger1.passenger_name
+						and passengerScheduleTable.time_from >= delayedPassenger1.time_to
+select
+	delayedPassenger1.delayed_time,
+	delayedPassenger1.passenger_name,
+	min(passengerScheduleTable.time_from) as time_from,
+	delayedPassenger1.flight_name as delayedFlightName
+	group by delayedPassenger1.passenger_name, delayedPassenger1.time_to
+insert into nextFlightStartTime;
+
+from nextFlightStartTime join passengerScheduleTable
+							on passengerScheduleTable.passenger_name == nextFlightStartTime.passenger_name
+								and passengerScheduleTable.time_from == nextFlightStartTime.time_from
+select 
+	nextFlightStartTime.delayed_time,
+	nextFlightStartTime.passenger_name,
+	nextFlightStartTime.time_from,
+	passengerScheduleTable.time_to,
+	nextFlightStartTime.delayedFlightName,
+	passengerScheduleTable.flight_number
+insert into nextFlightEvent;
+
+from nextFlightEvent join flightScheduleTable
+						on flightScheduleTable.flight_number == nextFlightEvent.flight_number
+select
+	nextFlightEvent.delayed_time,
+	nextFlightEvent.passenger_name,
+	nextFlightEvent.time_from,
+	nextFlightEvent.time_to,
+	nextFlightEvent.delayedFlightName,
+	nextFlightEvent.flight_number,
+	flightScheduleTable.flight_name as searchedFlightName
+insert into nextFlightSearchEvent;
+
+from nextFlightSearchEvent[delayedFlightName != searchedFlightName]
+select
+	nextFlightSearchEvent.delayed_time,
+	nextFlightSearchEvent.passenger_name,
+	nextFlightSearchEvent.time_from,
+	nextFlightSearchEvent.time_to,
+	nextFlightSearchEvent.flight_number,
+	nextFlightSearchEvent.searchedFlightName as flight_name
+insert into delayedPassenger;

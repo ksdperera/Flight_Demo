@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="UTF-8"?><streamConfiguration type="csv"><file>flight_schedule_stream_simulation_data2.csv</file><streamID>flights.schedule.stream:1.0.0</streamID><separateChar>,</separateChar><delayBetweenEventsInMilies>10</delayBetweenEventsInMilies></streamConfiguration>

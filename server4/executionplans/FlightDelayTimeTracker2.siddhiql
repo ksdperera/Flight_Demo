@@ -1,0 +1,185 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('FlightDelayTimeTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('delayed.event.stream:1.0.0')
+define stream delayedFlightInput (flight_number int, delayed_time long);
+
+@Export('delayed.maintenance.stream:1.0.0')
+define stream delayedMaintenance (delayed_time long, flight_name string, time_from int, time_to int);
+
+@Export('delayed.flight.stream:1.0.0')
+define stream delayedFlight (delayed_time long, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='MAINTENANCE_SCHEDULE_TABLE')
+define table maintenanceScheduleTableRDBMS (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table maintenanceScheduleTable (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
+
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from startTrigger join maintenanceScheduleTableRDBMS
+select flight_name, airport_name, hanger_number, time_from, time_to
+insert into maintenanceScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from maintenanceScheduleRdbmsStream
+insert into maintenanceScheduleTable;
+
+@info(name = 'generate_delayed_flight')
+from delayedFlightInput join flightScheduleTable
+	on flightScheduleTable.flight_number == flight_number
+select
+	delayedFlightInput.delayed_time,
+	flightScheduleTable.flight_number,
+	flightScheduleTable.flight_name, 
+	flightScheduleTable.time_from,
+	flightScheduleTable.time_to, 
+	flightScheduleTable.flight_from,
+	flightScheduleTable.flight_to
+insert into delayedFlight;
+
+@info(name = 'search_for_next_flight_list_for_flight_delayed_event')
+from delayedFlight join flightScheduleTable on flightScheduleTable.flight_name == flight_name 
+		and flightScheduleTable.time_from >= time_to
+select
+	delayedFlight.delayed_time,
+	flightScheduleTable.flight_name,
+	flightScheduleTable.time_from
+insert into nextFlightList;
+
+@info(name = 'search_for_next_maintenance_list__for_flight_delayed_event')
+from delayedFlight join maintenanceScheduleTable on maintenanceScheduleTable.flight_name == flight_name 
+		and maintenanceScheduleTable.time_from >= time_to
+select
+	delayedFlight.delayed_time,
+	maintenanceScheduleTable.flight_name,
+	maintenanceScheduleTable.time_from
+insert into nextMaintenanceList;
+
+from nextFlightList#window.timeBatch(2 sec)
+select
+	delayed_time,
+	flight_name,
+	min(time_from) as time_from
+insert into nextIntermEventStart;
+
+from nextMaintenanceList#window.timeBatch(2 sec)
+select
+	delayed_time,
+	flight_name,
+	min(time_from) as time_from
+insert into nextIntermEventStart;
+
+from nextIntermEventStart#window.timeBatch(2 sec)
+select
+	delayed_time,
+	flight_name,
+	min(time_from) as time_from
+insert into nextEventStart;
+
+
+from nextEventStart join delayedFlight
+						on  (nextEventStart.time_from - delayedFlight.time_to)*60 < delayedFlight.delayed_time
+select
+	nextEventStart.time_from,
+	nextEventStart.flight_name,
+	delayedFlight.delayed_time - (nextEventStart.time_from - delayedFlight.time_to)*60 as delayed_time
+insert into emptyGapStream;
+
+@info(name = 'generate_next_adjecent_flight')
+from nextEventStart join flightScheduleTable 
+						on flightScheduleTable.flight_name == flight_name 
+							and flightScheduleTable.time_from == time_from
+select 
+	nextEventStart.delayed_time,
+	flightScheduleTable.flight_number,
+	flightScheduleTable.flight_name, 
+	flightScheduleTable.time_from,
+	flightScheduleTable.time_to,
+	flightScheduleTable.flight_from,
+	flightScheduleTable.flight_to
+insert into delayedFlight;
+
+@info(name = 'generate_next_adjecant_maintenance')
+from nextEventStart join maintenanceScheduleTable
+							on maintenanceScheduleTable.flight_name == flight_name 
+								and maintenanceScheduleTable.time_from == time_from
+select 
+	nextEventStart.delayed_time,
+	maintenanceScheduleTable.flight_name,
+	maintenanceScheduleTable.time_from,
+	maintenanceScheduleTable.time_to
+insert into delayedMaintenance;
+
+
+@info(name = 'generate_next_fligt_if_empty_gap_found')
+from emptyGapStream join flightScheduleTable
+						on flightScheduleTable.flight_name == flight_name
+							and flightScheduleTable.time_from == time_from
+select 
+	emptyGapStream.delayed_time,
+	flightScheduleTable.flight_number,
+	flightScheduleTable.flight_name, 
+	flightScheduleTable.time_from,
+	flightScheduleTable.time_to,
+	flightScheduleTable.flight_from,
+	flightScheduleTable.flight_to
+insert into delayedFlight;
+
+@info(name = 'generate_next_maintenance_if_empty_gap_found')
+from emptyGapStream join maintenanceScheduleTable
+						on maintenanceScheduleTable.flight_name == flight_name 
+							and maintenanceScheduleTable.time_from == time_from
+select 
+	emptyGapStream.delayed_time,
+	maintenanceScheduleTable.flight_name,
+	maintenanceScheduleTable.time_from,
+	maintenanceScheduleTable.time_to
+insert into delayedMaintenance;
+
+
+@info(name = 'search_for_next_flight_list_for_maintenance_delayed_event')
+from delayedMaintenance join flightScheduleTable 
+							on flightScheduleTable.flight_name == flight_name 
+							and flightScheduleTable.time_from >= time_to
+select
+	delayedMaintenance.delayed_time,
+	flightScheduleTable.flight_name,
+	flightScheduleTable.time_from
+insert into nextFlightList;
+
+@info(name = 'search_for_next_maintenance_list_for_maintenance_delayed_event')
+from delayedMaintenance join maintenanceScheduleTable 
+							on maintenanceScheduleTable.flight_name == flight_name 
+								and maintenanceScheduleTable.time_from >= time_to
+select
+	delayedMaintenance.delayed_time,
+	maintenanceScheduleTable.flight_name,
+	maintenanceScheduleTable.time_from
+insert into nextMaintenanceList;
+
+from nextEventStart join delayedMaintenance
+						on  (nextEventStart.time_from - delayedMaintenance.time_to)*60 < delayedMaintenance.delayed_time
+select
+	nextEventStart.time_from,
+	nextEventStart.flight_name,
+	delayedMaintenance.delayed_time - (nextEventStart.time_from - delayedMaintenance.time_to)*60 as delayed_time
+insert into emptyGapStream;

@@ -1,0 +1,51 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('PassengerDelayTracker')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('delayed.flight.stream:1.0.0')
+define stream delayedFlightInput (delayed_time long, flight_number int, flight_name string, time_from int, time_to int);
+
+@Export('delayed.passenger.stream:1.0.0')
+define stream delayedPassengerList (delayed_time long, passenger_name string, time_from int, time_to int);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='PASSENGER_SCHEDULE_TABLE')
+define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table passengerScheduleTable (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
+
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from startTrigger join passengerScheduleTableRDBMS
+select flight_number, passenger_id, passenger_name, time_from, time_to
+insert into passengerScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from passengerScheduleRdbmsStream
+insert into passengerScheduleTable;
+
+@info(name = 'generate_effected_pessangers')
+from delayedFlightInput join passengerScheduleTable
+	on passengerScheduleTable.flight_number == flight_number
+select
+	delayed_time,
+	passenger_name, 
+	passengerScheduleTable.time_from,
+	passengerScheduleTable.time_to
+insert into delayedPassengerList;

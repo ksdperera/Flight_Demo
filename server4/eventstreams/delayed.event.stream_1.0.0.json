@@ -1,0 +1,16 @@
+{
+  "name": "delayed.event.stream",
+  "version": "1.0.0",
+  "nickName": "",
+  "description": "",
+  "payloadData": [
+    {
+      "name": "flight_number",
+      "type": "INT"
+    },
+    {
+      "name": "delayed_time",
+      "type": "LONG"
+    }
+  ]
+}

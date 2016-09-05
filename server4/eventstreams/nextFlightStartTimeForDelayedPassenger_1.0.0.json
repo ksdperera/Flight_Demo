@@ -1,0 +1,20 @@
+{
+  "name": "nextFlightStartTimeForDelayedPassenger",
+  "version": "1.0.0",
+  "nickName": "",
+  "description": "",
+  "payloadData": [
+    {
+      "name": "passenger_name",
+      "type": "STRING"
+    },
+    {
+      "name": "time_from",
+      "type": "INT"
+    },
+    {
+      "name": "delayedFlightName",
+      "type": "STRING"
+    }
+  ]
+}

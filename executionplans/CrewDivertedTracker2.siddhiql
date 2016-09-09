@@ -1,0 +1,75 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('CrewDivertedTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('diverted.flight.stream:1.0.0')
+define stream divertedFlightStream (diverted_to string, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+@Export('diverted.crew.stream:1.0.0')
+define stream effectedCrewList (diverted_to string, crew_name string, time_from int, time_to int, flight_number int, flight_from string, flight_to string, flight_name string);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='CREW_SCHEDULE_TABLE')
+define table crewScheduleTableRDBMS (flight_number int, crew_name string, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table crewScheduleTable (flight_number int, crew_name string, time_from int, time_to int);
+
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from startTrigger join crewScheduleTableRDBMS
+select flight_number, crew_name, time_from, time_to
+insert into crewScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from crewScheduleRdbmsStream
+insert into crewScheduleTable;
+
+@info(name = 'generate_effected_passenger')
+from divertedFlightStream join crewScheduleTable
+							on crewScheduleTable.flight_number == divertedFlightStream.flight_number
+select
+	divertedFlightStream.diverted_to,
+	crewScheduleTable.crew_name,
+	crewScheduleTable.time_from,
+	crewScheduleTable.time_to,
+	crewScheduleTable.flight_number
+insert into divertedCrew;
+
+from divertedCrew join crewScheduleTable
+					on crewScheduleTable.crew_name == crew_name and crewScheduleTable.time_from >= time_to
+select
+	divertedCrew.diverted_to,
+	crewScheduleTable.crew_name,
+	crewScheduleTable.time_from,
+	crewScheduleTable.time_to,
+	crewScheduleTable.flight_number
+insert into effectedCrewListInterm;
+
+from effectedCrewListInterm join flightScheduleTable
+								on flightScheduleTable.flight_number == flight_number
+select
+	effectedCrewListInterm.diverted_to,
+	effectedCrewListInterm.crew_name,
+	effectedCrewListInterm.time_from,
+	effectedCrewListInterm.time_to,
+	effectedCrewListInterm.flight_number,
+	flightScheduleTable.flight_from,
+	flightScheduleTable.flight_to,
+	flightScheduleTable.flight_name
+insert into effectedCrewList;

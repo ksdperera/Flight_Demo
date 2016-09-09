@@ -1,0 +1,16 @@
+{
+  "name": "delayed.crew.stream",
+  "version": "1.0.0",
+  "nickName": "",
+  "description": "",
+  "payloadData": [
+    {
+      "name": "crew_name",
+      "type": "STRING"
+    },
+    {
+      "name": "flight_number",
+      "type": "INT"
+    }
+  ]
+}

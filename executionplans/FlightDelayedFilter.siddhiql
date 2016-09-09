@@ -1,0 +1,50 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('FlightDelayedFilter')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+@Import('input.flight.delayed.stream:1.0.0')
+define stream inputFlightDelayedStream (flight_number int, flight_delayed_time_min long, flight_timestamp_hr long, flight_timestamp_min long);
+
+@Export('delayed.event.stream:1.0.0')
+define stream delayedFlightEvent (flight_number int, delayed_time long);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from inputFlightDelayedStream join flightScheduleTable
+								on flightScheduleTable.flight_number == flight_number
+									and flightScheduleTable.time_from <= inputFlightDelayedStream.flight_timestamp_hr
+select
+	inputFlightDelayedStream.flight_number,
+	inputFlightDelayedStream.flight_delayed_time_min,
+	inputFlightDelayedStream.flight_timestamp_hr,
+	inputFlightDelayedStream.flight_timestamp_min,
+	flightScheduleTable.time_from,
+	flightScheduleTable.time_to
+insert into intermFlightEvent;
+
+from intermFlightEvent[((time_to - (time_to - time_from)*0.3) - flight_timestamp_hr)*60 <=  flight_timestamp_min]
+select
+	intermFlightEvent.flight_number,
+	intermFlightEvent.flight_delayed_time_min as delayed_time
+insert into delayedFlightEventInterm;
+
+from delayedFlightEventInterm
+select
+	flight_number,
+	delayed_time
+insert into delayedFlightEvent;

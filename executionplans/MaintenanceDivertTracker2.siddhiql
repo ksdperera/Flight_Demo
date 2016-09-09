@@ -1,0 +1,39 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('MaintenanceDivertTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('diverted.flight.stream:1.0.0')
+define stream divertedFlightStream (diverted_to string, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+@Export('early.maintenance.stream:1.0.0')
+define stream earlyMeaintenance (airport_name string, hanger_number int, flight_name string, flight_landing_time int);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='MAINTENANCE_SCHEDULE_TABLE')
+define table maintenanceScheduleTableRDBMS (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
+
+define table maintenanceScheduleTable (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
+
+from startTrigger join maintenanceScheduleTableRDBMS
+select flight_name, airport_name, hanger_number, time_from, time_to
+insert into maintenanceScheduleRdbmsStream;
+
+from maintenanceScheduleRdbmsStream
+insert into maintenanceScheduleTable;
+
+@info(name = 'generate_effected_early_maintenance')
+from divertedFlightStream join maintenanceScheduleTable
+							on maintenanceScheduleTable.flight_name == flight_name and maintenanceScheduleTable.airport_name == divertedFlightStream.diverted_to
+select
+	maintenanceScheduleTable.airport_name,
+	maintenanceScheduleTable.hanger_number,
+	maintenanceScheduleTable.flight_name,
+	divertedFlightStream.time_to as flight_landing_time
+insert into earlyMeaintenance;

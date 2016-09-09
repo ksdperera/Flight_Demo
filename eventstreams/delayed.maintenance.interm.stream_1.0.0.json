@@ -1,0 +1,24 @@
+{
+  "name": "delayed.maintenance.interm.stream",
+  "version": "1.0.0",
+  "nickName": "",
+  "description": "",
+  "payloadData": [
+    {
+      "name": "delayed_time",
+      "type": "LONG"
+    },
+    {
+      "name": "flight_name",
+      "type": "STRING"
+    },
+    {
+      "name": "time_from",
+      "type": "INT"
+    },
+    {
+      "name": "time_to",
+      "type": "INT"
+    }
+  ]
+}

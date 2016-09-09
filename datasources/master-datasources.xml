@@ -36,7 +36,7 @@
             </jndiConfig>
             <definition type="RDBMS">
                 <configuration>
-                    <url>jdbc:mysql://localhost:3306/Southwest_Airlines_DB;DB_CLOSE_ON_EXIT=FALSE;LOCK_TIMEOUT=60000</url>
+                    <url>jdbc:mysql://localhost:3306/Southwest_Airlines_DB</url>
                     <username>root</username>
                     <password>root</password>
                     <driverClassName>com.mysql.jdbc.Driver</driverClassName>

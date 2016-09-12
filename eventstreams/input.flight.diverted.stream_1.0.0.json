@@ -1,5 +1,5 @@
 {
-  "name": "input.flight.delayed.stream",
+  "name": "input.flight.diverted.stream",
   "version": "1.0.0",
   "nickName": "",
   "description": "",
@@ -9,8 +9,8 @@
       "type": "INT"
     },
     {
-      "name": "flight_delayed_time_min",
-      "type": "LONG"
+      "name": "diverted_to",
+      "type": "STRING"
     },
     {
       "name": "flight_timestamp",

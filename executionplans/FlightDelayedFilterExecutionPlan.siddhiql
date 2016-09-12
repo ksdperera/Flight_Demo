@@ -1,0 +1,64 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('FlightDelayedFilterExecutionPlan')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+@Import('input.flight.delayed.stream:1.0.0')
+define stream inputFlightDelayedStream (flight_number int, flight_delayed_time_min long, flight_timestamp string);
+
+@Export('delayed.event.stream:1.0.0')
+define stream delayedFlightEvent (flight_number int, delayed_time long);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from string, time_to string);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+from startTrigger join flightScheduleTableRDBMS
+select
+	flight_name,
+	flight_number,
+	flight_from,
+	flight_to,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
+insert into flightScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from inputFlightDelayedStream
+select
+	flight_number,
+	flight_delayed_time_min,
+	(convert(time:dateFormat(flight_timestamp, 'HH', 'HH:mm'), 'int')*60 + convert(time:dateFormat(flight_timestamp, 'mm', 'HH:mm'), 'int')) as flight_timestamp
+insert into inputFlightDelayedStreamInterm;
+
+from inputFlightDelayedStreamInterm join flightScheduleTable
+								on flightScheduleTable.flight_number == flight_number
+									and flightScheduleTable.time_from <= inputFlightDelayedStreamInterm.flight_timestamp
+select
+	inputFlightDelayedStreamInterm.flight_number,
+	inputFlightDelayedStreamInterm.flight_delayed_time_min,
+	inputFlightDelayedStreamInterm.flight_timestamp,
+	flightScheduleTable.time_from,
+	flightScheduleTable.time_to
+insert into intermFlightEvent;
+
+from intermFlightEvent[(time_to - (time_to - time_from)*0.3) <=  (flight_timestamp + flight_delayed_time_min)]
+select
+	intermFlightEvent.flight_number,
+	intermFlightEvent.flight_delayed_time_min as delayed_time
+insert into delayedFlightEventInterm;
+
+from delayedFlightEventInterm
+select
+	flight_number,
+	delayed_time
+insert into delayedFlightEvent;

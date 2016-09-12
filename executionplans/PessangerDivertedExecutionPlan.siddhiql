@@ -1,5 +1,5 @@
 /* Enter a unique ExecutionPlan */
-@Plan:name('PessangerDivertedTracker2')
+@Plan:name('PessangerDivertedExecutionPlan')
 
 /* Enter a unique description for ExecutionPlan */
 -- @Plan:description('ExecutionPlan')
@@ -11,8 +11,8 @@
 @Import('diverted.flight.stream:1.0.0')
 define stream divertedFlightStream (diverted_to string, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
 
-@Export('passenger.reshedule.stream:1.0.0')
-define stream passengerReshedule (passenger_name string, time_from int, time_to int, flight_number int);
+@Export('passenger.reschedule.stream:1.0.0')
+define stream passengerReschedule (passenger_name string, time_from int, time_to int, flight_number int);
 
 @Export('passenger.rerouting.stream:1.0.0')
 define stream passengerRerouting (passenger_name string, rerouting_from string, rerouting_to string, flight_number int, flight_name string);
@@ -20,12 +20,21 @@ define stream passengerRerouting (passenger_name string, rerouting_from string, 
 define trigger startTrigger at 'start';
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='PASSENGER_FLIGHT_MERGE')
-define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int, flight_from string, flight_to string);
+define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from string, time_to string, flight_from string, flight_to string);
 
 define table passengerScheduleTable (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int, flight_from string, flight_to string);
 
 from startTrigger join passengerScheduleTableRDBMS
-select flight_number, passenger_id, passenger_name, time_from, time_to, flight_from, flight_to
+select 
+	flight_number,
+	passenger_id,
+	passenger_name,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to,
+	flight_from,
+	flight_to
 insert into passengerScheduleRdbmsStream;
 
 from passengerScheduleRdbmsStream
@@ -85,4 +94,4 @@ select
 	availableFlightEvent.time_from,
 	availableFlightEvent.time_to,
 	availableFlightEvent.flight_number
-insert into passengerReshedule;
+insert into passengerReschedule;

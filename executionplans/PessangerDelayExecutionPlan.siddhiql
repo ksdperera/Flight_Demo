@@ -1,5 +1,5 @@
 /* Enter a unique ExecutionPlan */
-@Plan:name('PessangerDelayTimeTracker2')
+@Plan:name('PessangerDelayExecutionPlan')
 
 /* Enter a unique description for ExecutionPlan */
 -- @Plan:description('ExecutionPlan')
@@ -11,27 +11,42 @@
 @Import('delayed.flight.stream:1.0.0')
 define stream delayedFlightStream (delayed_time long, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
 
-@Export('delayedPassenger:1.0.0')
+@Export('delayed.passenger.stream:1.0.0')
 define stream nextDelayedPassenger (delayed_time long, passenger_name string, time_from int, time_to int, flight_number int, flight_name string);
 
 define trigger startTrigger at 'start';
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
-define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from string, time_to string);
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='PASSENGER_SCHEDULE_TABLE')
-define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
+define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from string, time_to string);
 
 define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
 define table passengerScheduleTable (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int);
 
 
 from startTrigger join flightScheduleTableRDBMS
-select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+select 
+	flight_name,
+	flight_number,
+	flight_from,
+	flight_to,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
 insert into flightScheduleRdbmsStream;
 
 from startTrigger join passengerScheduleTableRDBMS
-select flight_number, passenger_id, passenger_name, time_from, time_to
+select 
+	flight_number,
+	passenger_id,
+	passenger_name,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
 insert into passengerScheduleRdbmsStream;
 
 from flightScheduleRdbmsStream
@@ -65,16 +80,16 @@ select
 	group by delayedPassengere.passenger_name, delayedPassengere.time_to
 insert into nextFlightStartTimeInterm;
 
-from nextFlightStartTimeInterm[(nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo)*60 < nextFlightStartTimeInterm.delayed_time]
+from nextFlightStartTimeInterm[(nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo) < nextFlightStartTimeInterm.delayed_time]
 select
-	nextFlightStartTimeInterm.delayed_time - (nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo)*60 as delayed_time,
+	nextFlightStartTimeInterm.delayed_time - (nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo) as delayed_time,
 	nextFlightStartTimeInterm.passenger_name,
 	nextFlightStartTimeInterm.time_from,
 	nextFlightStartTimeInterm.delayedFlightName,
 	nextFlightStartTimeInterm.delayedFlightTimeTo
 insert into nextFlightStartTime;
 
-from nextFlightStartTimeInterm[(nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo)*60 >= nextFlightStartTimeInterm.delayed_time]
+from nextFlightStartTimeInterm[(nextFlightStartTimeInterm.time_from - nextFlightStartTimeInterm.delayedFlightTimeTo) >= nextFlightStartTimeInterm.delayed_time]
 select
 	nextFlightStartTimeInterm.delayed_time,
 	nextFlightStartTimeInterm.passenger_name,

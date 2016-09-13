@@ -1,15 +1,15 @@
 {
-  "name": "diverted.crew.stream",
+  "name": "delayed.passenger.stream",
   "version": "1.0.0",
   "nickName": "",
   "description": "",
   "payloadData": [
     {
-      "name": "diverted_to",
-      "type": "STRING"
+      "name": "delayed_time",
+      "type": "LONG"
     },
     {
-      "name": "crew_name",
+      "name": "passenger_name",
       "type": "STRING"
     },
     {
@@ -23,14 +23,6 @@
     {
       "name": "flight_number",
       "type": "INT"
-    },
-    {
-      "name": "flight_from",
-      "type": "STRING"
-    },
-    {
-      "name": "flight_to",
-      "type": "STRING"
     },
     {
       "name": "flight_name",

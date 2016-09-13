@@ -1,5 +1,5 @@
 {
-  "name": "diverted.event.stream",
+  "name": "outlier.test.stream",
   "version": "1.0.0",
   "nickName": "",
   "description": "",
@@ -9,7 +9,11 @@
       "type": "INT"
     },
     {
-      "name": "diverted_to",
+      "name": "flight_delayed_time_min",
+      "type": "LONG"
+    },
+    {
+      "name": "flight_timestamp",
       "type": "STRING"
     }
   ]

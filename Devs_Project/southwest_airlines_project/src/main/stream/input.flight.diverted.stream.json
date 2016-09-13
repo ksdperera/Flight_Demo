@@ -1,5 +1,5 @@
 {
-  "name": "passenger.schedule.stream",
+  "name": "input.flight.diverted.stream",
   "version": "1.0.0",
   "nickName": "",
   "description": "",
@@ -9,20 +9,12 @@
       "type": "INT"
     },
     {
-      "name": "passenger_id",
+      "name": "diverted_to",
       "type": "STRING"
     },
     {
-      "name": "passenger_name",
+      "name": "flight_timestamp",
       "type": "STRING"
-    },
-    {
-      "name": "time_from",
-      "type": "INT"
-    },
-    {
-      "name": "time_to",
-      "type": "INT"
     }
   ]
 }

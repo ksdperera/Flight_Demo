@@ -125,12 +125,12 @@
       </plugin>
       <plugin>
         <groupId>org.wso2.maven</groupId>
-        <artifactId>analytics-execution-plan-maven-plugin</artifactId>
+        <artifactId>analytics-stream-maven-plugin</artifactId>
         <version>1.0.0</version>
         <extensions>true</extensions>
         <executions>
           <execution>
-            <id>execution-plan</id>
+            <id>stream</id>
             <phase>process-resources</phase>
             <goals>
               <goal>pom-gen</goal>
@@ -145,12 +145,12 @@
       </plugin>
       <plugin>
         <groupId>org.wso2.maven</groupId>
-        <artifactId>analytics-stream-maven-plugin</artifactId>
+        <artifactId>analytics-execution-plan-maven-plugin</artifactId>
         <version>1.0.0</version>
         <extensions>true</extensions>
         <executions>
           <execution>
-            <id>stream</id>
+            <id>execution-plan</id>
             <phase>process-resources</phase>
             <goals>
               <goal>pom-gen</goal>

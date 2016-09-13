@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<eventPublisher name="passengerReshedulePub" statistics="disable"
+<eventPublisher name="delayed.flight.publisher" statistics="disable"
   trace="disable" xmlns="http://wso2.org/carbon/eventpublisher">
-  <from streamName="passenger.reshedule.stream" version="1.0.0"/>
+  <from streamName="delayed.flight.stream" version="1.0.0"/>
   <mapping customMapping="disable" type="text"/>
   <to eventAdapterType="logger">
-    <property name="uniqueId">passengerReshedule</property>
+    <property name="uniqueId">Delayed Flight Alert</property>
   </to>
 </eventPublisher>

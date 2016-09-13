@@ -1,5 +1,5 @@
 /* Enter a unique ExecutionPlan */
-@Plan:name('CrewDivertedTracker2')
+@Plan:name('CrewDivertedExecutionPlan')
 
 /* Enter a unique description for ExecutionPlan */
 -- @Plan:description('ExecutionPlan')
@@ -17,21 +17,35 @@ define stream effectedCrewList (diverted_to string, crew_name string, time_from 
 define trigger startTrigger at 'start';
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
-define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from string, time_to string);
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='CREW_SCHEDULE_TABLE')
-define table crewScheduleTableRDBMS (flight_number int, crew_name string, time_from int, time_to int);
+define table crewScheduleTableRDBMS (flight_number int, crew_name string, time_from string, time_to string);
 
 define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
 define table crewScheduleTable (flight_number int, crew_name string, time_from int, time_to int);
 
 
 from startTrigger join flightScheduleTableRDBMS
-select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+select 
+	flight_name,
+	flight_number,
+	flight_from,
+	flight_to,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
 insert into flightScheduleRdbmsStream;
 
 from startTrigger join crewScheduleTableRDBMS
-select flight_number, crew_name, time_from, time_to
+select 
+	flight_number,
+	crew_name,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
 insert into crewScheduleRdbmsStream;
 
 from flightScheduleRdbmsStream

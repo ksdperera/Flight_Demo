@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<eventPublisher name="delayedMaintenancePub" statistics="disable"
+<eventPublisher name="delayed.passenger.publisher" statistics="disable"
   trace="disable" xmlns="http://wso2.org/carbon/eventpublisher">
-  <from streamName="delayedMeaintenance" version="1.0.0"/>
+  <from streamName="delayed.passenger.stream" version="1.0.0"/>
   <mapping customMapping="disable" type="text"/>
   <to eventAdapterType="logger">
-    <property name="uniqueId">delayedMaintenance</property>
+    <property name="uniqueId">Delayed Passenger Alert</property>
   </to>
 </eventPublisher>

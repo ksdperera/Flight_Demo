@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<eventPublisher name="delayedCrewEventPub" statistics="disable"
+<eventPublisher name="early.maintenance.publisher" statistics="disable"
   trace="disable" xmlns="http://wso2.org/carbon/eventpublisher">
-  <from streamName="delayed.crew.stream" version="1.0.0"/>
+  <from streamName="early.maintenance.stream" version="1.0.0"/>
   <mapping customMapping="disable" type="text"/>
   <to eventAdapterType="logger">
-    <property name="uniqueId">delayedCrewEvent</property>
+    <property name="uniqueId">Early Maintenance Alert</property>
   </to>
 </eventPublisher>

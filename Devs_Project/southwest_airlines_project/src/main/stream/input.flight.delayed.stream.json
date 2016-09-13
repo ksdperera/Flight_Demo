@@ -13,12 +13,8 @@
       "type": "LONG"
     },
     {
-      "name": "flight_timestamp_hr",
-      "type": "LONG"
-    },
-    {
-      "name": "flight_timestamp_min",
-      "type": "LONG"
+      "name": "flight_timestamp",
+      "type": "STRING"
     }
   ]
 }

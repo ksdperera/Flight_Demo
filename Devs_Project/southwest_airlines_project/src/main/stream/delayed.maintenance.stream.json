@@ -19,6 +19,14 @@
     {
       "name": "time_to",
       "type": "INT"
+    },
+    {
+      "name": "airport_name",
+      "type": "STRING"
+    },
+    {
+      "name": "hanger_number",
+      "type": "INT"
     }
   ]
 }

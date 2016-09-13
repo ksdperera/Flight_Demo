@@ -1,5 +1,5 @@
 /* Enter a unique ExecutionPlan */
-@Plan:name('MaintenanceDivertTracker2')
+@Plan:name('MaintenanceDivertExecutionPlan')
 
 /* Enter a unique description for ExecutionPlan */
 -- @Plan:description('ExecutionPlan')
@@ -17,12 +17,19 @@ define stream earlyMeaintenance (airport_name string, hanger_number int, flight_
 define trigger startTrigger at 'start';
 
 @From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='MAINTENANCE_SCHEDULE_TABLE')
-define table maintenanceScheduleTableRDBMS (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
+define table maintenanceScheduleTableRDBMS (flight_name string, airport_name string, hanger_number int, time_from string, time_to string);
 
 define table maintenanceScheduleTable (flight_name string, airport_name string, hanger_number int, time_from int, time_to int);
 
 from startTrigger join maintenanceScheduleTableRDBMS
-select flight_name, airport_name, hanger_number, time_from, time_to
+select 
+	flight_name,
+	airport_name,
+	hanger_number,
+	convert(time:dateFormat(time_from, 'HH', 'HH:mm'), 'int')*60 +
+	     convert(time:dateFormat(time_from, 'mm', 'HH:mm'), 'int') as time_from,
+	convert(time:dateFormat(time_to, 'HH', 'HH:mm'), 'int')*60 +
+		convert(time:dateFormat(time_to, 'mm', 'HH:mm'), 'int') as time_to
 insert into maintenanceScheduleRdbmsStream;
 
 from maintenanceScheduleRdbmsStream

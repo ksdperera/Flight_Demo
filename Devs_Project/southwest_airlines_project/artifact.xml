@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><artifacts>
+    <artifact name="delayedPassengerPub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/delayedPassengerPub.xml</file>
+    </artifact>
+    <artifact name="FlightDelayedFilter" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/FlightDelayedFilter.siddhiql</file>
+    </artifact>
+    <artifact name="diverted.crew.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/diverted.crew.stream.json</file>
+    </artifact>
+    <artifact name="passenger.rerouting.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/passenger.rerouting.stream.json</file>
+    </artifact>
+    <artifact name="MaintenanceDivertTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/MaintenanceDivertTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="PessangerDelayTimeTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/PessangerDelayTimeTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="CrewDivertedTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/CrewDivertedTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="delayedMeaintenance" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayedMeaintenance.json</file>
+    </artifact>
+    <artifact name="effectedCrewListPub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/effectedCrewListPub.xml</file>
+    </artifact>
+    <artifact name="passenger.schedule.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/passenger.schedule.stream.json</file>
+    </artifact>
+    <artifact name="delayed.event.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayed.event.stream.json</file>
+    </artifact>
+    <artifact name="delayedPassenger" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayedPassenger.json</file>
+    </artifact>
+    <artifact name="diverted.event.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/diverted.event.stream.json</file>
+    </artifact>
+    <artifact name="delayed.flight.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayed.flight.stream.json</file>
+    </artifact>
+    <artifact name="MaintenanceDelayTimeTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/MaintenanceDelayTimeTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="CrewDelayTimeTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/CrewDelayTimeTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="earlyMeaintenancePub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/earlyMeaintenancePub.xml</file>
+    </artifact>
+    <artifact name="FlightDelayTimeTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/FlightDelayTimeTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="delayedMaintenancePub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/delayedMaintenancePub.xml</file>
+    </artifact>
+    <artifact name="input.flight.delayed.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/input.flight.delayed.stream.json</file>
+    </artifact>
+    <artifact name="passenger.reshedule.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/passenger.reshedule.stream.json</file>
+    </artifact>
+    <artifact name="passengerReshedulePub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/passengerReshedulePub.xml</file>
+    </artifact>
+    <artifact name="diverted.flight.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/diverted.flight.stream.json</file>
+    </artifact>
+    <artifact name="PessangerDivertedTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/PessangerDivertedTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="delayedCrewEventPub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/delayedCrewEventPub.xml</file>
+    </artifact>
+    <artifact name="maintenance.schedule.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/maintenance.schedule.stream.json</file>
+    </artifact>
+    <artifact name="passengerReroutingPub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/passengerReroutingPub.xml</file>
+    </artifact>
+    <artifact name="delayedPassengerePub" groupId="com.example.southwest_airlines_project.publisher" version="1.0.0" type="event/publisher" serverRole="ComplexEventProcessor">
+        <file>src/main/publisher/delayedPassengerePub.xml</file>
+    </artifact>
+    <artifact name="FlightDivertedTimeTracker2" groupId="com.example.southwest_airlines_project.execution-plan" version="1.0.0" type="event/execution-plan" serverRole="ComplexEventProcessor">
+        <file>src/main/execution-plan/FlightDivertedTimeTracker2.siddhiql</file>
+    </artifact>
+    <artifact name="delayed.maintenance.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayed.maintenance.stream.json</file>
+    </artifact>
+    <artifact name="flights.schedule.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/flights.schedule.stream.json</file>
+    </artifact>
+    <artifact name="crew.schedule.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/crew.schedule.stream.json</file>
+    </artifact>
+    <artifact name="delayed.crew.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/delayed.crew.stream.json</file>
+    </artifact>
+    <artifact name="early.maintenance.stream" groupId="com.example.southwest_airlines_project.stream" version="1.0.0" type="event/stream" serverRole="ComplexEventProcessor">
+        <file>src/main/stream/early.maintenance.stream.json</file>
+    </artifact>
+</artifacts>

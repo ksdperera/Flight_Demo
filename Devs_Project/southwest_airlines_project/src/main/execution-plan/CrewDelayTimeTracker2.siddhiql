@@ -1,0 +1,164 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('CrewDelayTimeTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('delayed.flight.stream:1.0.0')
+define stream delayedFlightStream (delayed_time long, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+/*
+@Export('nextEffectedCrewFlight:1.0.0')
+define stream nextEffectedCrewFlight (crew_name string, flight_number int, time_from int, delayedFlightDestination string);
+
+/*
+@Export('nextFlightListForCrew:1.0.0')
+define stream nextFlightListForCrew (delayed_time long, crew_name string, time_from int, flight_number int, flight_name string, delayedFlightDestination string);
+/*
+@Export('nextEventStart:1.0.0')
+define stream nextEventStart (crew_name string, delayed_time long, flight_name string, delayedFlightDestination string, time_from int);
+
+@Export('nextFlightEventStart:1.0.0')
+define stream nextFlightEventStart (delayed_time long, crew_name string, time_from int, flight_number int, searchFlightName string, flight_name string, delayedFlightDestination string);
+
+*/
+@Export('delayed.crew.stream:1.0.0')
+define stream delayedCrewEvent (crew_name string, flight_number int);
+
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='FLIGHTS_SCHEDULE_TABLE')
+define table flightScheduleTableRDBMS (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='CREW_SCHEDULE_TABLE')
+define table crewScheduleTableRDBMS (flight_number int, crew_name string, time_from int, time_to int);
+
+define table flightScheduleTable (flight_name string, flight_number int, flight_from string, flight_to string, time_from int, time_to int);
+define table crewScheduleTable (flight_number int, crew_name string, time_from int, time_to int);
+
+
+from startTrigger join flightScheduleTableRDBMS
+select flight_name, flight_number, flight_from, flight_to, time_from, time_to
+insert into flightScheduleRdbmsStream;
+
+from startTrigger join crewScheduleTableRDBMS
+select flight_number, crew_name, time_from, time_to
+insert into crewScheduleRdbmsStream;
+
+from flightScheduleRdbmsStream
+insert into flightScheduleTable;
+
+from crewScheduleRdbmsStream
+insert into crewScheduleTable;
+
+@info(name = 'generate_effected_crew')
+from delayedFlightStream join crewScheduleTable
+							on crewScheduleTable.flight_number == flight_number
+select
+	delayedFlightStream.delayed_time,
+	crewScheduleTable.crew_name,
+	crewScheduleTable.time_from,
+	crewScheduleTable.time_to,
+	delayedFlightStream.flight_number,
+	delayedFlightStream.flight_name,
+	delayedFlightStream.flight_from,
+	delayedFlightStream.flight_to
+insert into delayedCrew;
+
+@info(name = 'search_for_next_flight_list_for_delayed_crew')
+from delayedCrew join crewScheduleTable 
+					on crewScheduleTable.crew_name == crew_name 
+						and crewScheduleTable.time_from >= time_to
+select
+	delayedCrew.delayed_time,
+	crewScheduleTable.crew_name,
+	crewScheduleTable.time_from,
+	crewScheduleTable.flight_number,
+	delayedCrew.flight_name,
+	delayedCrew.flight_to as delayedFlightDestination
+insert into nextFlightListForCrew;
+
+from nextFlightListForCrew#window.timeBatch(2 sec)
+select
+	crew_name,
+	delayed_time,
+	flight_name,
+	delayedFlightDestination,
+	min(time_from) as time_from
+group by crew_name
+insert into nextEventStart;
+
+from nextEventStart join crewScheduleTable 
+						on crewScheduleTable.crew_name == crew_name
+							and crewScheduleTable.time_from == time_from
+select 
+	nextEventStart.delayed_time,
+	nextEventStart.crew_name,
+	nextEventStart.time_from,
+	crewScheduleTable.flight_number,
+	nextEventStart.flight_name,
+	nextEventStart.delayedFlightDestination
+insert into intermNextFlightEventStart;
+
+from intermNextFlightEventStart join flightScheduleTable
+							on flightScheduleTable.flight_number == flight_number
+select 
+	intermNextFlightEventStart.delayed_time,
+	intermNextFlightEventStart.crew_name,
+	intermNextFlightEventStart.time_from,
+	intermNextFlightEventStart.flight_number,
+	flightScheduleTable.flight_name as searchFlightName,
+	intermNextFlightEventStart.flight_name,
+	intermNextFlightEventStart.delayedFlightDestination
+insert into nextFlightEventStart;
+
+
+@info(name = 'generate_delayed_crew_event')
+from nextFlightEventStart[flight_name != searchFlightName]
+select 
+	nextFlightEventStart.crew_name,
+	nextFlightEventStart.flight_number,
+	nextFlightEventStart.time_from,
+	nextFlightEventStart.delayedFlightDestination
+insert into nextEffectedCrewFlight;
+
+from nextEffectedCrewFlight
+select
+	nextEffectedCrewFlightList.crew_name,
+	nextEffectedCrewFlightList.flight_number
+insert into delayedCrewEvent;
+
+@info(name = 'search_for_next_flight_list_for_delayed_crew_event')
+from nextEffectedCrewFlight join crewScheduleTable
+							 on crewScheduleTable.crew_name == crew_name 
+							 	and crewScheduleTable.time_from >= time_from
+select
+	crewScheduleTable.crew_name,
+	crewScheduleTable.flight_number,
+	crewScheduleTable.time_from,
+	nextEffectedCrewFlight.delayedFlightDestination
+insert into nextEffectedCrewFlightList;
+
+from nextEffectedCrewFlightList join flightScheduleTable
+									on flightScheduleTable.flight_number == flight_number
+											and flightScheduleTable.flight_from != nextEffectedCrewFlightList.delayedFlightDestination
+select
+	nextEffectedCrewFlightList.crew_name,
+	nextEffectedCrewFlightList.flight_number
+insert into delayedCrewEvent;
+
+/*
+
+from nextEventStart join delayedCrew
+						on  (nextEventStart.time_from - delayedCrew.time_to)*60 < delayedCrew.delayed_time
+select
+	nextEventStart.time_from,
+	nextEventStart.crew_name,
+	delayedCrew.delayedFlightDestination,
+	delayedCrew.delayed_time - (nextEventStart.time_from - delayedCrew.time_to)*60 as delayed_time
+insert into crewBreakStream;

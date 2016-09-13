@@ -1,0 +1,88 @@
+/* Enter a unique ExecutionPlan */
+@Plan:name('PessangerDivertedTracker2')
+
+/* Enter a unique description for ExecutionPlan */
+-- @Plan:description('ExecutionPlan')
+
+/* define streams/tables and write queries here ... */
+
+@Plan:trace('false')
+
+@Import('diverted.flight.stream:1.0.0')
+define stream divertedFlightStream (diverted_to string, flight_number int, flight_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+@Export('passenger.reshedule.stream:1.0.0')
+define stream passengerReshedule (passenger_name string, time_from int, time_to int, flight_number int);
+
+@Export('passenger.rerouting.stream:1.0.0')
+define stream passengerRerouting (passenger_name string, rerouting_from string, rerouting_to string, flight_number int, flight_name string);
+
+define trigger startTrigger at 'start';
+
+@From(eventtable='rdbms', datasource.name='SOUTHWEST_AIRLINES_DB', table.name='PASSENGER_FLIGHT_MERGE')
+define table passengerScheduleTableRDBMS (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+define table passengerScheduleTable (flight_number int, passenger_id string, passenger_name string, time_from int, time_to int, flight_from string, flight_to string);
+
+from startTrigger join passengerScheduleTableRDBMS
+select flight_number, passenger_id, passenger_name, time_from, time_to, flight_from, flight_to
+insert into passengerScheduleRdbmsStream;
+
+from passengerScheduleRdbmsStream
+insert into passengerScheduleTable;
+
+@info(name = 'generate_effected_passenger')
+from divertedFlightStream join passengerScheduleTable
+							on passengerScheduleTable.flight_number == flight_number
+select
+	divertedFlightStream.diverted_to,
+	passengerScheduleTable.passenger_name,
+	passengerScheduleTable.time_from,
+	passengerScheduleTable.time_to,
+	divertedFlightStream.flight_number,
+	divertedFlightStream.flight_name,
+	divertedFlightStream.flight_from,
+	divertedFlightStream.flight_to,
+	divertedFlightStream.time_to as divertedFlightTimeTo
+insert into divertedPassengere;
+
+
+
+
+from divertedPassengere[false == ((passengerScheduleTable.passenger_name == passenger_name 
+								   and passengerScheduleTable.flight_to == diverted_to) in passengerScheduleTable)]
+select
+	divertedPassengere.passenger_name,
+	divertedPassengere.diverted_to as rerouting_from,
+	divertedPassengere.flight_to as rerouting_to,
+	divertedPassengere.flight_number,
+	divertedPassengere.flight_name
+insert into passengerRerouting;
+
+from divertedPassengere[(passengerScheduleTable.passenger_name == passenger_name 
+						 and passengerScheduleTable.flight_to == diverted_to) in passengerScheduleTable]
+select
+	divertedPassengere.diverted_to,
+	divertedPassengere.passenger_name,
+	divertedPassengere.flight_number,
+	divertedPassengere.flight_name
+insert into flightAvailable;
+
+from flightAvailable join passengerScheduleTable
+							on passengerScheduleTable.passenger_name == flightAvailable.passenger_name 
+							and passengerScheduleTable.flight_to == flightAvailable.diverted_to
+select
+	passengerScheduleTable.passenger_name,
+	passengerScheduleTable.time_from,
+	passengerScheduleTable.time_to,
+	passengerScheduleTable.flight_number
+insert into availableFlightEvent;
+
+from availableFlightEvent[(passengerScheduleTable.passenger_name == passenger_name 
+						   and passengerScheduleTable.time_from >= time_to) in passengerScheduleTable]
+select
+	availableFlightEvent.passenger_name,
+	availableFlightEvent.time_from,
+	availableFlightEvent.time_to,
+	availableFlightEvent.flight_number
+insert into passengerReshedule;
